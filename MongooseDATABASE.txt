@@ -1,0 +1,49 @@
+const mongoose = require('mongoose');
+
+const itemSchema = new mongoose.Schema({
+    idItem: { type: String, required: true },
+    quantidadeItem: { type: Number, required: true },
+    valorItem: { type: Number, required: true }
+});
+
+const orderSchema = new mongoose.Schema({
+    numeroPedido: { type: String, required: true, unique: true },
+    valorTotal: { type: Number, required: true },
+    dataCriacao: { type: Date, default: Date.now },
+    items: [itemSchema] // Array de subdocumentos
+});
+
+module.exports = mongoose.model('Order', orderSchema);
+
+
+2º------------------------------------------------------------------
+
+
+const mongoose = require('mongoose');
+const Order = require('./Order'); // Importa o modelo acima
+
+// Conexão com o MongoDB (Local ou Atlas)
+mongoose.connect('mongodb://localhost:27017/meu_ecommerce');
+
+app.post('/order', async (req, res) => {
+    try {
+        const { numeroPedido, valorTotal, dataCriacao, items } = req.body;
+
+        // Criar uma nova instância do modelo com o JSON recebido
+        const novoPedido = new Order({
+            numeroPedido,
+            valorTotal,
+            dataCriacao,
+            items
+        });
+
+        // Salvar no MongoDB de forma assíncrona
+        await novoPedido.save();
+
+        res.status(201).json({ mensagem: "Pedido gravado no MongoDB!", id: novoPedido._id });
+
+    } catch (error) {
+        // Trata erro de duplicidade (numeroPedido único) ou falta de campos
+        res.status(400).json({ erro: error.message });
+    }
+});

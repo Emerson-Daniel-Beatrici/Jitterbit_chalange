@@ -1,0 +1,254 @@
+const express = require('express');
+const app = express();
+
+app.use(express.json()); // Middleware para processar JSON
+
+let pedidos = []; // Simulação de banco de dados na memória
+
+// 1. CREATE - Criar um pedido (POST)
+app.post('/pedidos', (req, res) => {
+    const { cliente, item, valor } = req.body;
+    const novoPedido = { id: pedidos.length + 1, cliente, item, valor };
+    pedidos.push(novoPedido);
+    res.status(201).json(novoPedido);
+});
+
+// 2. READ - Listar todos os pedidos (GET)
+app.get('/pedidos', (req, res) => {
+    res.status(200).json(pedidos);
+});
+
+// 3. UPDATE - Atualizar um pedido por ID (PUT)
+app.put('/pedidos/:id', (req, res) => {
+    const { id } = req.params;
+    const { item, valor } = req.body;
+    const pedido = pedidos.find(p => p.id === parseInt(id));
+
+    if (!pedido) return res.status(404).json({ erro: "Pedido não encontrado" });
+
+    pedido.item = item || pedido.item;
+    pedido.valor = valor || pedido.valor;
+    
+    res.json(pedido);
+});
+
+// 4. DELETE - Excluir um pedido por ID (DELETE)
+app.delete('/pedidos/:id', (req, res) => {
+    const { id } = req.params;
+    const index = pedidos.findIndex(p => p.id === parseInt(id));
+
+    if (index === -1) return res.status(404).json({ erro: "Pedido não encontrado" });
+
+    pedidos.splice(index, 1);
+    res.status(204).send(); // Sucesso sem conteúdo
+});
+
+app.listen(3000, () => console.log("Servidor de Pedidos rodando na porta 3000"));
+
+//A1--------------------------------------------------------------------------------------
+
+const express = require('express');
+const app = express();
+
+app.use(express.json()); // Habilita o recebimento de JSON no body
+
+let orders = []; // Simulação de banco de dados
+
+// Rota para CRIAR um novo pedido
+app.post('/order', (req, res) => {
+    try {
+        const { item, quantity, price } = req.body;
+
+        // Validação simples (usando throw como vimos antes)
+        if (!item || !quantity) {
+            throw new Error("Campos obrigatórios ausentes: item e quantity.");
+        }
+
+        const newOrder = {
+            id: orders.length + 1,
+            item,
+            quantity,
+            price: price || 0,
+            status: "pendente",
+            createdAt: new Date()
+        };
+
+        orders.push(newOrder);
+
+        // Retorna status 201 (Created) para sucesso na criação
+        res.status(201).json(newOrder);
+
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+app.listen(3000, () => console.log("API rodando em http://localhost:3000"));
+
+
+//A2--------------------------------------------------------------------------------
+
+
+// Rota para buscar um pedido pelo número (ID) passado na URL
+app.get('/order/:orderNumber', (req, res) => {
+    // 1. Capturar o parâmetro da URL
+    const { orderNumber } = req.params;
+
+    // 2. Buscar o pedido no array (ou banco de dados)
+    // Supondo que seu campo de identificação seja 'id' ou 'orderNumber'
+    const pedidoEncontrado = orders.find(o => o.orderNumber === orderNumber);
+
+    // 3. Validar se o pedido existe
+    if (!pedidoEncontrado) {
+        return res.status(404).json({ 
+            mensagem: "Pedido não encontrado", 
+            codigo: orderNumber 
+        });
+    }
+
+    // 4. Retornar os dados com status 200 (Sucesso)
+    res.status(200).json(pedidoEncontrado);
+});
+
+
+//OP1------------------------------------------------------------------------------------
+
+// Rota para LISTAR todos os pedidos
+app.get('/order/list', (req, res) => {
+    try {
+        // 1. Verificar se existem pedidos
+        if (orders.length === 0) {
+            return res.status(200).json({ 
+                mensagem: "Nenhum pedido encontrado.", 
+                pedidos: [] 
+            });
+        }
+
+        // 2. Retornar a lista completa com status 200 (Sucesso)
+        res.status(200).json(orders);
+
+    } catch (error) {
+        // Tratamento de erro genérico
+        res.status(500).json({ error: "Erro ao buscar a lista de pedidos." });
+    }
+});
+
+
+//OP2--------------------------------------------------------------------------------------
+
+// Rota para ATUALIZAR um pedido pelo ID na URL
+app.put('/order/:orderId', (req, res) => {
+    const { orderId } = req.params; // Captura "v10089016vdb"
+    const { item, quantity, price, status } = req.body; // Dados novos vindos do Body
+
+    try {
+        // 1. Localizar o pedido no array (ou banco de dados)
+        const pedido = orders.find(o => o.orderNumber === orderId);
+
+        // 2. Validar se o pedido existe
+        if (!pedido) {
+            return res.status(404).json({ erro: "Pedido não encontrado para atualização." });
+        }
+
+        // 3. Atualizar os campos (mantém o valor antigo se o novo não for enviado)
+        pedido.item = item || pedido.item;
+        pedido.quantity = quantity || pedido.quantity;
+        pedido.price = price || pedido.price;
+        pedido.status = status || pedido.status;
+        pedido.updatedAt = new Date(); // Registra o momento da alteração
+
+        // 4. Retornar o pedido atualizado com status 200
+        res.status(200).json({
+            mensagem: "Pedido atualizado com sucesso!",
+            pedido: pedido
+        });
+
+    } catch (error) {
+        res.status(500).json({ erro: "Erro interno ao atualizar o pedido." });
+    }
+});
+
+
+//OP3-----------------------------------------------------------------------------------
+
+// Rota para EXCLUIR um pedido pelo ID na URL
+app.delete('/order/:orderId', (req, res) => {
+    const { orderId } = req.params; // Captura "v10089016vdb"
+
+    try {
+        // 1. Encontrar o índice do pedido no array
+        const index = orders.findIndex(o => o.orderNumber === orderId);
+
+        // 2. Validar se o pedido existe antes de tentar deletar
+        if (index === -1) {
+            return res.status(404).json({ 
+                erro: "Pedido não encontrado.", 
+                codigo: orderId 
+            });
+        }
+
+        // 3. Remover o pedido do array
+        const pedidoRemovido = orders.splice(index, 1);
+
+        // 4. Retornar status 204 (No Content) ou 200 com mensagem
+        // O status 204 é o padrão técnico para "deletado com sucesso e sem corpo de resposta"
+        res.status(200).json({ 
+            mensagem: `Pedido ${orderId} removido com sucesso!`,
+            detalhes: pedidoRemovido[0]
+        });
+
+    } catch (error) {
+        res.status(500).json({ erro: "Erro ao tentar excluir o pedido." });
+    }
+});
+
+//Receba--------------------------------------------------------------------------------
+
+// Rota para CRIAR pedido com itens aninhados
+app.post('/order', (req, res) => {
+    try {
+        // 1. Desestruturar os dados do body recebido
+        const { numeroPedido, valorTotal, dataCriacao, items } = req.body;
+
+        // 2. Validação básica (Obrigatório ter número e pelo menos um item)
+        if (!numeroPedido || !items || items.length === 0) {
+            throw new Error("Dados inválidos: 'numeroPedido' e 'items' são obrigatórios.");
+        }
+
+        // 3. Criar o objeto do pedido (Pronto para o Banco de Dados)
+        const novoPedido = {
+            numeroPedido,
+            valorTotal,
+            dataCriacao: dataCriacao || new Date().toISOString(),
+            items: items.map(item => ({
+                idItem: item.idItem,
+                quantidadeItem: item.quantidadeItem,
+                valorItem: item.valorItem
+            })),
+            statusInterno: "RECEBIDO"
+        };
+
+        // 4. Salvar no array (ou banco de dados real)
+        orders.push(novoPedido);
+
+        // 5. Retornar status 201 (Created)
+        res.status(201).json({
+            mensagem: "Pedido processado com sucesso!",
+            idGerado: novoPedido.numeroPedido
+        });
+
+    } catch (error) {
+        // Captura o erro do 'throw' e retorna 400 (Bad Request)
+        res.status(400).json({ erro: error.message });
+    }
+});
+
+
+
+
+
+
+
+
+
+
